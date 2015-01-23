@@ -26,6 +26,7 @@ public class ProjetSessionUnofficial {
         String client;
         String contrat;
         String mois;
+        String dateConvertie;
         int soin;
         String date;
         Double montant;
@@ -44,11 +45,7 @@ public class ProjetSessionUnofficial {
         client = claim.getString("client");
         mois = claim.getString("mois");
         
-        //numeroClientValide = verifierNumeroClient(client);
-        
-        if ((client.length() == 6 && verifierNumeroClient(client)) && 
-                (contrat.equals("A")|| contrat.equals("B") || contrat.equals("C") || contrat.equals("D")) && 
-                (contrat.charAt(0)>='A' && contrat.charAt(0) <= 'Z')){
+        if ((verifierNumeroClient(client)) && verifierContrat(contrat)) {
         
             JSONArray claimArray = JSONArray.fromObject(claim.getJSONArray("reclamations"));
             JSONArray reclamArray = new JSONArray();
@@ -61,13 +58,13 @@ public class ProjetSessionUnofficial {
                 date = claimArray.getJSONObject(i).getString("date");
                 montant = Double.parseDouble(claimArray.getJSONObject(i).getString("montant").replace('$', '0'));
                 
-                date = dateConverti(date);
+                dateConvertie = dateConvertie(date);
                 
-                if(contrat.equals("C")  && date.equals(mois)){                   
+                if(contrat.equals("C")  && dateConvertie.equals(mois)){                   
                     montantCalcule = montant * 0.9;               
                 }// end if C
             
-                if(contrat.equals("A") && date.equals(mois)){
+                if(contrat.equals("A") && dateConvertie.equals(mois)){
                     if (soin == 0 || soin == 100 || soin == 200 || soin == 500){                
                         montantCalcule = montant * 0.25;
                     }
@@ -81,7 +78,7 @@ public class ProjetSessionUnofficial {
                     }
                 }// end if A
         
-                if(contrat.equals("B") && date.equals(mois)){
+                if(contrat.equals("B") && dateConvertie.equals(mois)){
                     if (soin == 0 || soin == 100 || soin == 500 || (soin >= 300 && soin <=399)){                
                         montantCalcule = montant * 0.5;
                         if(soin == 0 && montantCalcule > 40){
@@ -104,7 +101,7 @@ public class ProjetSessionUnofficial {
                     }
                 } // end if B
         
-                if(contrat.equals("D") && date.equals(mois)){
+                if(contrat.equals("D") && dateConvertie.equals(mois)){
                     if (soin == 0 || soin == 100 || (soin >= 300 && soin <=399) || soin == 400 
                             || soin == 500 || soin == 600 || soin == 700){                
                         
@@ -153,6 +150,7 @@ public class ProjetSessionUnofficial {
         }else{
             JSONObject Erreur = new JSONObject();
             Erreur.put("message", "Données invalides");
+            Erreur.put("message1", "Données invalides");
             try {
                 FileOutput.write(Erreur.toString(1));
                 FileOutput.flush();
@@ -173,24 +171,29 @@ public class ProjetSessionUnofficial {
      */
     public static boolean verifierNumeroClient(String client){
         
-        boolean numeroClientValide = true;
-        for(int i = 0; i < client.length(); i++){
-            if(client.charAt(i) < '0' || client.charAt(i) > '9'){
-            numeroClientValide = false;
-            //i = client.length();
+        boolean numeroClientValide = false;
+        if (client.length() == 6){
+            for(int i = 0; i < client.length(); i++){
+                numeroClientValide = client.charAt(i) >= '0' && client.charAt(i) <= '9';
             }
-        } 
+        }
         return numeroClientValide;
      }
     
     /** convert the date to YYYY-MM in order to compare it to each date
      * @param date
      * @return  */
-        public static String dateConverti(String date){
-            String dateConverti = "";
+        public static String dateConvertie(String date){
+            String dateConvertie = "";
             for(int j = 0; j < date.length()- 3; j++){
-                dateConverti = dateConverti + date.charAt(j);
+                dateConvertie = dateConvertie + date.charAt(j);
             }
-            return dateConverti;
+            return dateConvertie;
         }       
+        
+        public static boolean verifierContrat(String contrat){
+            
+            return (contrat.equals("A")|| contrat.equals("B") || contrat.equals("C") || contrat.equals("D"));
+        
+        }
 }
