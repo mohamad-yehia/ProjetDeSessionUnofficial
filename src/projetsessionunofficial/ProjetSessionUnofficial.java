@@ -22,11 +22,9 @@ public class ProjetSessionUnofficial {
         String jsonInput = args[0];// Parametre du fichier d'entre
         String jsonOutput = args[1];// Parametre du fichier de sortie
         
-        
         String client;
         String contrat;
         String mois;
-        String dateConvertie;
         int soin;
         String date;
         Double montant;
@@ -37,7 +35,7 @@ public class ProjetSessionUnofficial {
         String claims = FileReader.loadFileIntoString(jsonInput, "UTF-8");
         JSONObject claim = JSONObject.fromObject(claims);
         
-        // Format le montantResult
+        /**  Format le montantCalcule */
         DecimalFormat format = new DecimalFormat();
         format.setMinimumFractionDigits(2);
         
@@ -45,40 +43,36 @@ public class ProjetSessionUnofficial {
         client = claim.getString("client");
         mois = claim.getString("mois");
         
-        if ((verifierNumeroClient(client)) && verifierContrat(contrat)) {
+        JSONArray claimArray = JSONArray.fromObject(claim.getJSONArray("reclamations"));
+        JSONArray reclamArray = new JSONArray();
+        JSONObject reclamation = new JSONObject();       
         
-            JSONArray claimArray = JSONArray.fromObject(claim.getJSONArray("reclamations"));
-            JSONArray reclamArray = new JSONArray();
-            JSONObject reclamation = new JSONObject();
+        if ((verifierNumeroClient(client)) && verifierContrat(contrat) && verifierDate(claimArray, claim)) {
             
-            /** Parcourir le tableau pour calculer le montant a rembourser*/
+            /** Parcourir le tableau pour calculer le montant a rembourser pour chaque reclamation*/
             for (int i =0; i < claimArray.size();i ++){
                 
                 soin = claimArray.getJSONObject(i).getInt("soin");
                 date = claimArray.getJSONObject(i).getString("date");
                 montant = Double.parseDouble(claimArray.getJSONObject(i).getString("montant").replace('$', '0'));
                 
-                dateConvertie = dateConvertie(date);
-                
-                if(contrat.equals("C")  && dateConvertie.equals(mois)){                   
+                if(contrat.equals("C")){                   
                     montantCalcule = montant * 0.9;               
                 }// end if C
             
-                if(contrat.equals("A") && dateConvertie.equals(mois)){
+                if(contrat.equals("A")){
                     if (soin == 0 || soin == 100 || soin == 200 || soin == 500){                
                         montantCalcule = montant * 0.25;
                     }
-                        
                     if ((soin >= 300 && soin <= 399) || soin == 400 || soin == 700){
                         montantCalcule = montant * 0;
                     }
-                
                     if (soin == 600){
                         montantCalcule = montant * 0.4;
                     }
                 }// end if A
         
-                if(contrat.equals("B") && dateConvertie.equals(mois)){
+                if(contrat.equals("B")){
                     if (soin == 0 || soin == 100 || soin == 500 || (soin >= 300 && soin <=399)){                
                         montantCalcule = montant * 0.5;
                         if(soin == 0 && montantCalcule > 40){
@@ -87,7 +81,6 @@ public class ProjetSessionUnofficial {
                             montantCalcule = 50;
                         } 
                     }
-            
                     if (soin == 200 || soin == 600){
                         montantCalcule = montant * 1;
                     
@@ -95,13 +88,12 @@ public class ProjetSessionUnofficial {
                             montantCalcule = 70;
                         }
                     }
-                
                     if (soin == 700){                                  
                         montantCalcule = montant * 0.7;
                     }
                 } // end if B
         
-                if(contrat.equals("D") && dateConvertie.equals(mois)){
+                if(contrat.equals("D")){
                     if (soin == 0 || soin == 100 || (soin >= 300 && soin <=399) || soin == 400 
                             || soin == 500 || soin == 600 || soin == 700){                
                         
@@ -143,25 +135,20 @@ public class ProjetSessionUnofficial {
                 FileOutput.close();
             }catch(IOException ex){
                 System.out.println(ex.getMessage());
-            }finally{
-            
             }
             
         }else{
             JSONObject Erreur = new JSONObject();
             Erreur.put("message", "Données invalides");
-            Erreur.put("message1", "Données invalides");
             try {
                 FileOutput.write(Erreur.toString(1));
                 FileOutput.flush();
                 FileOutput.close();
             }catch(IOException ex){    
                 System.out.println(ex.getMessage());
-            }finally{
-            
             }
             
-        }// end first if
+        }// end main if
 
     }// end main
     
@@ -178,22 +165,29 @@ public class ProjetSessionUnofficial {
             }
         }
         return numeroClientValide;
-     }
-    
-    /** convert the date to YYYY-MM in order to compare it to each date
-     * @param date
-     * @return  */
-        public static String dateConvertie(String date){
-            String dateConvertie = "";
-            for(int j = 0; j < date.length()- 3; j++){
-                dateConvertie = dateConvertie + date.charAt(j);
-            }
-            return dateConvertie;
-        }       
+     }     
         
-        public static boolean verifierContrat(String contrat){
+    public static boolean verifierContrat(String contrat){
             
-            return (contrat.equals("A")|| contrat.equals("B") || contrat.equals("C") || contrat.equals("D"));
+        return (contrat.equals("A")|| contrat.equals("B") || contrat.equals("C") || contrat.equals("D"));
         
+    }
+        
+    /** Valider les dates de toutes les reclamations avant de proceder a calculer le montant
+    * @param claimArray
+    * @param claim
+    * @return  */
+    public static boolean verifierDate(JSONArray claimArray, JSONObject claim){
+        
+        boolean dateEstValide = true;
+        for (int i =0; i < claimArray.size();i ++){
+            if (!claimArray.getJSONObject(i).getString("date").
+                    substring(0, 7).equals(claim.getString("mois"))){
+                dateEstValide = false;
+                i = claimArray.size();
+            }
         }
+        return dateEstValide;
+    }    
+        
 }
