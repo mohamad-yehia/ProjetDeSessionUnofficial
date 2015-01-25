@@ -162,6 +162,9 @@ public class ProjetSessionUnofficial {
         if (client.length() == 6){
             for(int i = 0; i < client.length(); i++){
                 numeroClientValide = client.charAt(i) >= '0' && client.charAt(i) <= '9';
+                if(!numeroClientValide){
+                    i=client.length();
+                }
             }
         }
         return numeroClientValide;
